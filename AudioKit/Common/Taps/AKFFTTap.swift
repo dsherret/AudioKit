@@ -13,15 +13,14 @@ import Foundation
     
     internal let bufferSize: UInt32 = 1024
     internal var fft: EZAudioFFT?
-    
-    /// Array of FFT data
-    open var fftData = [Double](zeros: 512)
+    private var fftDataReceivedCallback: (_ fftData: UnsafeMutablePointer<Float>, _ bufferSize: Int) -> Void
     
     /// Initialze the FFT calculation on a given node
     ///
     /// - parameter input: Node on whose output the FFT will be computed
     ///
-    public init(_ input: AKNode) {
+    public init(_ input: AKNode, fftDataReceivedCallback: @escaping (_ fftData: UnsafeMutablePointer<Float>, _ bufferSize: Int) -> Void) {
+        self.fftDataReceivedCallback = fftDataReceivedCallback
         super.init()
         fft = EZAudioFFT(maximumBufferSize: vDSP_Length(bufferSize), sampleRate: Float(AKSettings.sampleRate), delegate: self)
         input.avAudioNode.installTap(onBus: 0, bufferSize: bufferSize, format: AudioKit.format) { [weak self] (buffer, time) -> Void in
@@ -36,10 +35,8 @@ import Foundation
     
     /// Callback function for FFT computation
     @objc open func fft(_ fft: EZAudioFFT!, updatedWithFFTData fftData: UnsafeMutablePointer<Float>, bufferSize: vDSP_Length) {
-        DispatchQueue.main.async { () -> Void in
-            for i in 0..<512 {
-                self.fftData[i] = Double(fftData[i])
-            }
-        }
+        self.fftDataReceivedCallback(fftData, Int(bufferSize))
+        //DispatchQueue.main.async { () -> Void in
+        //}
     }
 }
