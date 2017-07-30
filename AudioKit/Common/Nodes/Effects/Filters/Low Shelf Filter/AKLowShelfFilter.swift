@@ -3,22 +3,21 @@
 //  AudioKit
 //
 //  Created by Aurelius Prochazka, revision history on Github.
-//  Copyright (c) 2016 Aurelius Prochazka. All rights reserved.
+//  Copyright © 2017 Aurelius Prochazka. All rights reserved.
 //
-
-import AVFoundation
 
 /// AudioKit version of Apple's LowShelfFilter Audio Unit
 ///
 open class AKLowShelfFilter: AKNode, AKToggleable, AUEffect {
 
+    /// Four letter unique description of the node
     public static let ComponentDescription = AudioComponentDescription(appleEffect: kAudioUnitSubType_LowShelfFilter)
 
     private var au: AUWrapper
     private var mixer: AKMixer
 
     /// Cutoff Frequency (Hz) ranges from 10 to 200 (Default: 80)
-    open var cutoffFrequency: Double = 80 {
+    open dynamic var cutoffFrequency: Double = 80 {
         didSet {
             cutoffFrequency = (10...200).clamp(cutoffFrequency)
             au[kAULowShelfParam_CutoffFrequency] = cutoffFrequency
@@ -26,7 +25,7 @@ open class AKLowShelfFilter: AKNode, AKToggleable, AUEffect {
     }
 
     /// Gain (dB) ranges from -40 to 40 (Default: 0)
-    open var gain: Double = 0 {
+    open dynamic var gain: Double = 0 {
         didSet {
             gain = (-40...40).clamp(gain)
             au[kAULowShelfParam_Gain] = gain
@@ -34,7 +33,7 @@ open class AKLowShelfFilter: AKNode, AKToggleable, AUEffect {
     }
 
     /// Dry/Wet Mix (Default 100)
-    open var dryWetMix: Double = 100 {
+    open dynamic var dryWetMix: Double = 100 {
         didSet {
             dryWetMix = (0...100).clamp(dryWetMix)
             inputGain?.volume = 1 - dryWetMix / 100
@@ -46,10 +45,13 @@ open class AKLowShelfFilter: AKNode, AKToggleable, AUEffect {
     private var inputGain: AKMixer?
     private var effectGain: AKMixer?
 
+    // Store the internal effect
+    fileprivate var internalEffect: AVAudioUnitEffect
+
     // MARK: - Initialization
 
     /// Tells whether the node is processing (ie. started, playing, or active)
-    open var isStarted = true
+    open dynamic var isStarted = true
 
     /// Initialize the low shelf filter node
     ///
@@ -59,7 +61,7 @@ open class AKLowShelfFilter: AKNode, AKToggleable, AUEffect {
     ///   - gain: Gain (dB) ranges from -40 to 40 (Default: 0)
     ///
     public init(
-        _ input: AKNode,
+        _ input: AKNode?,
         cutoffFrequency: Double = 80,
         gain: Double = 0) {
 
@@ -67,19 +69,23 @@ open class AKLowShelfFilter: AKNode, AKToggleable, AUEffect {
         self.gain = gain
 
         inputGain = AKMixer(input)
-        inputGain!.volume = 0
-        mixer = AKMixer(inputGain!)
+        inputGain?.volume = 0
+        mixer = AKMixer(inputGain)
 
         effectGain = AKMixer(input)
-        effectGain!.volume = 1
+        effectGain?.volume = 1
 
         let effect = _Self.effect
-        au = AUWrapper(au: effect)
+        self.internalEffect = effect
+
+        au = AUWrapper(effect)
 
         super.init(avAudioNode: mixer.avAudioNode)
 
         AudioKit.engine.attach(effect)
-        AudioKit.engine.connect((effectGain?.avAudioNode)!, to: effect)
+        if let node = effectGain?.avAudioNode {
+                AudioKit.engine.connect(node, to: effect)
+            }
         AudioKit.engine.connect(effect, to: mixer.avAudioNode)
 
         au[kAULowShelfParam_CutoffFrequency] = cutoffFrequency
@@ -103,5 +109,13 @@ open class AKLowShelfFilter: AKNode, AKToggleable, AUEffect {
             dryWetMix = 0
             isStarted = false
         }
+    }
+
+    /// Disconnect the node
+    override open func disconnect() {
+        stop()
+
+        disconnect(nodes: [inputGain!.avAudioNode, effectGain!.avAudioNode, mixer.avAudioNode])
+        AudioKit.engine.detach(self.internalEffect)
     }
 }

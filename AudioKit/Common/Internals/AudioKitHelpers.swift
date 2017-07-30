@@ -3,17 +3,17 @@
 //  AudioKit
 //
 //  Created by Aurelius Prochazka, revision history on Github.
-//  Copyright © 2016 AudioKit. All rights reserved.
+//  Copyright © 2017 Aurelius Prochazka. All rights reserved.
 //
 
-import Foundation
-import CoreAudio
 import AudioToolbox
+import CoreAudio
 
-public typealias MIDINoteNumber = Int
-public typealias MIDIVelocity = Int
-public typealias MIDIChannel = Int
-
+public typealias MIDIByte = UInt8
+public typealias MIDIWord = UInt16
+public typealias MIDINoteNumber = UInt8
+public typealias MIDIVelocity = UInt8
+public typealias MIDIChannel = UInt8
 
 extension Collection where IndexDistance == Int {
     /// Return a random element from the collection
@@ -22,6 +22,7 @@ extension Collection where IndexDistance == Int {
         return index(startIndex, offsetBy: offset)
     }
 
+    /// Retrieve a random element from the collection
     public func randomElement() -> Iterator.Element {
         return self[randomIndex]
     }
@@ -59,7 +60,7 @@ public func AKLog(_ string: String, fname: String = #function) {
 ///   - maximum: Upper bound of randomization
 ///
 public func random(_ minimum: Double, _ maximum: Double) -> Double {
-    let precision = 1000000
+    let precision = 1_000_000
     let width = maximum - minimum
 
     return Double(arc4random_uniform(UInt32(precision))) / Double(precision) * width + minimum
@@ -79,8 +80,8 @@ extension Double {
     ///
     public func normalized(
         minimum: Double,
-                maximum: Double,
-                taper: Double) -> Double {
+        maximum: Double,
+        taper: Double) -> Double {
 
         if taper > 0 {
             // algebraic taper
@@ -112,12 +113,12 @@ extension Double {
     public func denormalized(minimum: Double,
                              maximum: Double,
                              taper: Double) -> Double {
-        
+
         // Avoiding division by zero in this trivial case
-        if maximum - minimum < 0.00001 {
+        if maximum - minimum < 0.000_01 {
             return minimum
         }
-        
+
         if taper > 0 {
             // algebraic taper
             return minimum + (maximum - minimum) * pow(self, taper)
@@ -125,8 +126,8 @@ extension Double {
             // exponential taper
             var adjustedMinimum: Double = 0.0
             var adjustedMaximum: Double = 0.0
-            if minimum == 0 { adjustedMinimum = 0.00000000001 }
-            if maximum == 0 { adjustedMaximum = 0.00000000001 }
+            if minimum == 0 { adjustedMinimum = 0.000_000_000_01 }
+            if maximum == 0 { adjustedMaximum = 0.000_000_000_01 }
 
             return log(self / adjustedMinimum) / log(adjustedMaximum / adjustedMinimum)
         }
@@ -146,6 +147,18 @@ extension Double {
 
 /// Extension to Int to calculate frequency from a MIDI Note Number
 extension Int {
+
+    /// Calculate frequency from a MIDI Note Number
+    ///
+    /// - parameter aRef: Reference frequency of A Note (Default: 440Hz)
+    ///
+    public func midiNoteToFrequency(_ aRef: Double = 440.0) -> Double {
+        return Double(self).midiNoteToFrequency(aRef)
+    }
+}
+
+/// Extension to Int to calculate frequency from a MIDI Note Number
+extension UInt8 {
 
     /// Calculate frequency from a MIDI Note Number
     ///
@@ -188,7 +201,7 @@ extension Double {
     /// - parameter aRef: Reference frequency of A Note (Default: 440Hz)
     ///
     public func frequencyToMIDINote(_ aRef: Double = 440.0) -> Double {
-        return 69 + 12 * log2(self/aRef)
+        return 69 + 12 * log2(self / aRef)
     }
 }
 
@@ -234,6 +247,7 @@ internal func AudioUnitSetParameter(_ unit: AudioUnit, param: AudioUnitParameter
     AudioUnitSetParameter(unit, param, kAudioUnitScope_Global, 0, AudioUnitParameterValue(value), 0)
 }
 
+/// Adding subscript
 extension AVAudioUnit {
     subscript (param: AudioUnitParameterID) -> Double {
         get {
@@ -246,27 +260,27 @@ extension AVAudioUnit {
 }
 
 internal struct AUWrapper {
-    private let au: AVAudioUnit
+    private let avAudioUnit: AVAudioUnit
 
-    init(au: AVAudioUnit) {
-        self.au = au
+    init(_ avAudioUnit: AVAudioUnit) {
+        self.avAudioUnit = avAudioUnit
     }
 
     subscript (param: AudioUnitParameterID) -> Double {
         get {
-            return au[param]
+            return avAudioUnit[param]
         }
         set {
-            au[param] = newValue
+            avAudioUnit[param] = newValue
         }
     }
 }
 
+/// Adding instantiation with component and callback
 extension AVAudioUnit {
-    class func _instantiate(with component: AudioComponentDescription, callback: @escaping (AVAudioUnit) -> ()) {
-        AVAudioUnit.instantiate(with: component, options: []) {
-            au, err in
-            au.map {
+    class func _instantiate(with component: AudioComponentDescription, callback: @escaping (AVAudioUnit) -> Void) {
+        AVAudioUnit.instantiate(with: component, options: []) { avAudioUnit, _ in
+            avAudioUnit.map {
                 AudioKit.engine.attach($0)
                 callback($0)
             }
@@ -276,26 +290,58 @@ extension AVAudioUnit {
 
 extension AUParameter {
     @nonobjc
-    convenience init(identifier: String,
-                     name: String, 
+    convenience init(_ identifier: String,
+                     name: String,
                      address: AUParameterAddress,
-                     range: Range<AUValue>,
-                     unit: AudioUnitParameterUnit) {
+                     range: ClosedRange<AUValue>,
+                     unit: AudioUnitParameterUnit,
+                     value: AUValue = 0) {
         self.init(identifier,
                   name: name,
                   address: address,
-                  min: range.lowerBound, 
+                  min: range.lowerBound,
                   max: range.upperBound,
                   unit: unit)
+        self.value = value
     }
 }
 
+/// Adding instantiate with callback
 extension AudioComponentDescription {
-    func instantiate(callback: @escaping (AVAudioUnit) -> ()) {
+    func instantiate(callback: @escaping (AVAudioUnit) -> Void) {
         AVAudioUnit._instantiate(with: self) {
             callback($0)
         }
     }
 }
 
+// Anything that can hold a value (strings, arrays, etc)
+protocol Occupiable {
+    var isEmpty: Bool { get }
+    var isNotEmpty: Bool { get }
+}
 
+// Give a default implementation of isNotEmpty, so conformance only requires one implementation
+extension Occupiable {
+    var isNotEmpty: Bool {
+        return ❗️isEmpty
+    }
+}
+
+extension String: Occupiable { }
+
+// I can't think of a way to combine these collection types. Suggestions welcome.
+extension Array: Occupiable { }
+extension Dictionary: Occupiable { }
+extension Set: Occupiable { }
+
+#if !os(macOS)
+extension AVAudioSessionCategoryOptions: Occupiable { }
+#endif
+
+prefix operator ❗️
+
+/// Negative logic can be confusing, so we draw special attention to those cases
+prefix public func ❗️(a: Bool) -> Bool {
+    return !a
+}

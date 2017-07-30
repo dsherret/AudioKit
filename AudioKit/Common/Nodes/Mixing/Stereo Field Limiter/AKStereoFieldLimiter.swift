@@ -3,14 +3,13 @@
 //  AudioKit
 //
 //  Created by Aurelius Prochazka, revision history on Github.
-//  Copyright (c) 2016 Aurelius Prochazka. All rights reserved.
+//  Copyright © 2017 Aurelius Prochazka. All rights reserved.
 //
-
-import AVFoundation
 
 /// Stereo Field Limiter
 open class AKStereoFieldLimiter: AKNode, AKToggleable, AKComponent {
     public typealias AKAudioUnitType = AKStereoFieldLimiterAudioUnit
+    /// Four letter unique description of the node
     public static let ComponentDescription = AudioComponentDescription(effect: "sflm")
 
     // MARK: - Properties
@@ -21,30 +20,32 @@ open class AKStereoFieldLimiter: AKNode, AKToggleable, AKComponent {
     fileprivate var amountParameter: AUParameter?
 
     /// Ramp Time represents the speed at which parameters are allowed to change
-    open var rampTime: Double = AKSettings.rampTime {
+    open dynamic var rampTime: Double = AKSettings.rampTime {
         willSet {
             internalAU?.rampTime = newValue
         }
     }
-    
+
     fileprivate var lastKnownamount: Double = 1.0
-    
+
     /// Limiting Factor
-    open var amount: Double = 0 {
+    open dynamic var amount: Double = 0 {
         willSet {
             if amount != newValue {
-                if internalAU!.isSetUp() {
-                    amountParameter?.setValue(Float(newValue), originator: token!)
+                if internalAU?.isSetUp() ?? false {
+                    if let existingToken = token {
+                        amountParameter?.setValue(Float(newValue), originator: existingToken)
+                    }
                 } else {
                     internalAU?.amount = Float(newValue)
                 }
             }
         }
     }
-    
+
     /// Tells whether the node is processing (ie. started, playing, or active)
-    open var isStarted: Bool {
-        return internalAU!.isPlaying()
+    open dynamic var isStarted: Bool {
+        return internalAU?.isPlaying() ?? false
     }
 
     // MARK: - Initialization
@@ -56,7 +57,7 @@ open class AKStereoFieldLimiter: AKNode, AKToggleable, AKComponent {
     ///   - amount: limit factor (Default: 1, Minimum: 0)
     ///
     public init(
-        _ input: AKNode,
+        _ input: AKNode?,
         amount: Double = 1) {
 
         self.amount = amount
@@ -64,25 +65,25 @@ open class AKStereoFieldLimiter: AKNode, AKToggleable, AKComponent {
         _Self.register()
 
         super.init()
-        AVAudioUnit._instantiate(with: _Self.ComponentDescription) {
-            avAudioUnit in
+        AVAudioUnit._instantiate(with: _Self.ComponentDescription) { [weak self] avAudioUnit in
 
-            self.avAudioNode = avAudioUnit
-            self.internalAU = avAudioUnit.auAudioUnit as? AKAudioUnitType
+            self?.avAudioNode = avAudioUnit
+            self?.internalAU = avAudioUnit.auAudioUnit as? AKAudioUnitType
 
-            input.addConnectionPoint(self)
+            input?.addConnectionPoint(self!)
         }
 
-        guard let tree = internalAU?.parameterTree else { return }
+        guard let tree = internalAU?.parameterTree else {
+            return
+        }
 
-        amountParameter   = tree["amount"]
+        amountParameter = tree["amount"]
 
-        token = tree.token (byAddingParameterObserver: {
-            address, value in
+        token = tree.token (byAddingParameterObserver: { [weak self] address, value in
 
             DispatchQueue.main.async {
-                if address == self.amountParameter!.address {
-                    self.amount = Double(value)
+                if address == self?.amountParameter?.address {
+                    self?.amount = Double(value)
                 }
             }
         })
@@ -97,7 +98,7 @@ open class AKStereoFieldLimiter: AKNode, AKToggleable, AKComponent {
             amount = lastKnownamount
         }
     }
-    
+
     /// Function to stop or bypass the node, both are equivalent
     open func stop() {
         if isPlaying {

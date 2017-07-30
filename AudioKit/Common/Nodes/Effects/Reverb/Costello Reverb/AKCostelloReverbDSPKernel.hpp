@@ -3,7 +3,7 @@
 //  AudioKit
 //
 //  Created by Aurelius Prochazka, revision history on Github.
-//  Copyright (c) 2016 Aurelius Prochazka. All rights reserved.
+//  Copyright © 2017 Aurelius Prochazka. All rights reserved.
 //
 
 #pragma once
@@ -22,14 +22,14 @@ enum {
     cutoffFrequencyAddress = 1
 };
 
-class AKCostelloReverbDSPKernel : public AKSporthKernel, public AKBuffered {
+class AKCostelloReverbDSPKernel : public AKSoundpipeKernel, public AKBuffered {
 public:
     // MARK: Member Functions
 
     AKCostelloReverbDSPKernel() {}
 
     void init(int _channels, double _sampleRate) override {
-        AKSporthKernel::init(_channels, _sampleRate);
+        AKSoundpipeKernel::init(_channels, _sampleRate);
 
         sp_revsc_create(&revsc);
         sp_revsc_init(sp, revsc);
@@ -50,7 +50,7 @@ public:
 
     void destroy() {
         sp_revsc_destroy(&revsc);
-        AKSporthKernel::destroy();
+        AKSoundpipeKernel::destroy();
     }
 
     void reset() {

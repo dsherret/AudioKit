@@ -3,22 +3,21 @@
 //  AudioKit
 //
 //  Created by Aurelius Prochazka, revision history on Github.
-//  Copyright (c) 2016 Aurelius Prochazka. All rights reserved.
+//  Copyright © 2017 Aurelius Prochazka. All rights reserved.
 //
-
-import AVFoundation
 
 /// AudioKit version of Apple's PeakLimiter Audio Unit
 ///
 open class AKPeakLimiter: AKNode, AKToggleable, AUEffect {
 
+    /// Four letter unique description of the node
     public static let ComponentDescription = AudioComponentDescription(appleEffect: kAudioUnitSubType_PeakLimiter)
 
     private var au: AUWrapper
     private var mixer: AKMixer
 
     /// Attack Time (Secs) ranges from 0.001 to 0.03 (Default: 0.012)
-    open var attackTime: Double = 0.012 {
+    open dynamic var attackTime: Double = 0.012 {
         didSet {
             attackTime = (0.001...0.03).clamp(attackTime)
             au[kLimiterParam_AttackTime] = attackTime
@@ -26,7 +25,7 @@ open class AKPeakLimiter: AKNode, AKToggleable, AUEffect {
     }
 
     /// Decay Time (Secs) ranges from 0.001 to 0.06 (Default: 0.024)
-    open var decayTime: Double = 0.024 {
+    open dynamic var decayTime: Double = 0.024 {
         didSet {
             decayTime = (0.001...0.06).clamp(decayTime)
             au[kLimiterParam_DecayTime] = decayTime
@@ -34,7 +33,7 @@ open class AKPeakLimiter: AKNode, AKToggleable, AUEffect {
     }
 
     /// Pre Gain (dB) ranges from -40 to 40 (Default: 0)
-    open var preGain: Double = 0 {
+    open dynamic var preGain: Double = 0 {
         didSet {
             preGain = (-40...40).clamp(preGain)
             au[kLimiterParam_PreGain] = preGain
@@ -42,7 +41,7 @@ open class AKPeakLimiter: AKNode, AKToggleable, AUEffect {
     }
 
     /// Dry/Wet Mix (Default 100)
-    open var dryWetMix: Double = 100 {
+    open dynamic var dryWetMix: Double = 100 {
         didSet {
             dryWetMix = (0...100).clamp(dryWetMix)
             inputGain?.volume = 1 - dryWetMix / 100
@@ -54,8 +53,11 @@ open class AKPeakLimiter: AKNode, AKToggleable, AUEffect {
     private var inputGain: AKMixer?
     private var effectGain: AKMixer?
 
+    // Store the internal effect
+    fileprivate var internalEffect: AVAudioUnitEffect
+
     /// Tells whether the node is processing (ie. started, playing, or active)
-    open var isStarted = true
+    open dynamic var isStarted = true
 
     /// Initialize the peak limiter node
     ///
@@ -66,7 +68,7 @@ open class AKPeakLimiter: AKNode, AKToggleable, AUEffect {
     ///   - preGain: Pre Gain (dB) ranges from -40 to 40 (Default: 0)
     ///
     public init(
-        _ input: AKNode,
+        _ input: AKNode?,
         attackTime: Double = 0.012,
         decayTime: Double = 0.024,
         preGain: Double = 0) {
@@ -76,19 +78,23 @@ open class AKPeakLimiter: AKNode, AKToggleable, AUEffect {
             self.preGain = preGain
 
             inputGain = AKMixer(input)
-            inputGain!.volume = 0
-            mixer = AKMixer(inputGain!)
+            inputGain?.volume = 0
+            mixer = AKMixer(inputGain)
 
             effectGain = AKMixer(input)
-            effectGain!.volume = 1
+            effectGain?.volume = 1
 
             let effect = _Self.effect
-            au = AUWrapper(au: effect)
+            self.internalEffect = effect
+
+            au = AUWrapper(effect)
 
             super.init(avAudioNode: mixer.avAudioNode)
             AudioKit.engine.attach(effect)
 
-            AudioKit.engine.connect((effectGain?.avAudioNode)!, to: effect, format: AudioKit.format)
+            if let node = effectGain?.avAudioNode {
+                AudioKit.engine.connect(node, to: effect, format: AudioKit.format)
+            }
             AudioKit.engine.connect(effect, to: mixer.avAudioNode, format: AudioKit.format)
 
             au[kLimiterParam_AttackTime] = attackTime
@@ -113,5 +119,13 @@ open class AKPeakLimiter: AKNode, AKToggleable, AUEffect {
             dryWetMix = 0
             isStarted = false
         }
+    }
+
+    /// Disconnect the node
+    override open func disconnect() {
+        stop()
+
+        disconnect(nodes: [inputGain!.avAudioNode, effectGain!.avAudioNode, mixer.avAudioNode])
+        AudioKit.engine.detach(self.internalEffect)
     }
 }

@@ -3,7 +3,7 @@
 //  AudioKit
 //
 //  Created by Aurelius Prochazka, revision history on Github.
-//  Copyright (c) 2016 Aurelius Prochazka. All rights reserved.
+//  Copyright © 2017 Aurelius Prochazka. All rights reserved.
 //
 
 #pragma once
@@ -36,7 +36,7 @@ static inline double noteToHz(int noteNumber)
     return 440. * exp2((noteNumber - 69)/12.);
 }
 
-class AKOscillatorBankDSPKernel : public AKSporthKernel, public AKOutputBuffered {
+class AKOscillatorBankDSPKernel : public AKSoundpipeKernel, public AKOutputBuffered {
 public:
     // MARK: Types
     struct NoteState {
@@ -94,6 +94,11 @@ public:
         
         void noteOn(int noteNumber, int velocity)
         {
+            noteOn(noteNumber, velocity, (float)noteToHz(noteNumber));
+        }
+        
+        void noteOn(int noteNumber, int velocity, float frequency)
+        {
             if (velocity == 0) {
                 if (stage == stageOn) {
                     stage = stageRelease;
@@ -101,13 +106,13 @@ public:
                 }
             } else {
                 if (stage == stageOff) { add(); }
-                osc->freq = (float)noteToHz(noteNumber);
+                osc->freq = (float)frequency;
                 osc->amp = (float)pow2(velocity / 127.);
                 stage = stageOn;
                 internalGate = 1;
             }
         }
-        
+
         
         void run(int frameCount, float* outL, float* outR)
         {
@@ -148,7 +153,7 @@ public:
     }
 
     void init(int _channels, double _sampleRate) override {
-        AKSporthKernel::init(_channels, _sampleRate);
+        AKSoundpipeKernel::init(_channels, _sampleRate);
 
         attackDurationRamper.init();
         decayDurationRamper.init();
@@ -170,13 +175,16 @@ public:
     void startNote(int note, int velocity) {
         noteStates[note].noteOn(note, velocity);
     }
+    void startNote(int note, int velocity, float frequency) {
+        noteStates[note].noteOn(note, velocity, frequency);
+    }
 
     void stopNote(int note) {
         noteStates[note].noteOn(note, 0);
     }
 
     void destroy() {
-        AKSporthKernel::destroy();
+        AKSoundpipeKernel::destroy();
     }
 
     void reset() {
@@ -221,7 +229,7 @@ public:
     }
 
     void setDetuningMultiplier(float value) {
-        detuningMultiplier = clamp(value, (float)0.5, (float)2.0);
+        detuningMultiplier = value;
         detuningMultiplierRamper.setImmediate(detuningMultiplier);
     }
 
@@ -250,7 +258,7 @@ public:
                 break;
 
             case detuningMultiplierAddress:
-                detuningMultiplierRamper.setUIValue(clamp(value, (float)0.5, (float)2.0));
+                detuningMultiplierRamper.setUIValue(value);
                 break;
 
         }
@@ -305,7 +313,7 @@ public:
                 break;
 
             case detuningMultiplierAddress:
-                detuningMultiplierRamper.startRamp(clamp(value, (float)0.5, (float)2.0), duration);
+                detuningMultiplierRamper.startRamp(value, duration);
                 break;
 
         }

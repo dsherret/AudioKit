@@ -3,7 +3,7 @@
 //  AudioKit
 //
 //  Created by Aurelius Prochazka, revision history on Github.
-//  Copyright (c) 2016 Aurelius Prochazka. All rights reserved.
+//  Copyright © 2017 Aurelius Prochazka. All rights reserved.
 //
 
 #pragma once
@@ -21,14 +21,14 @@ enum {
     panAddress = 0
 };
 
-class AKPannerDSPKernel : public AKSporthKernel, public AKBuffered {
+class AKPannerDSPKernel : public AKSoundpipeKernel, public AKBuffered {
 public:
     // MARK: Member Functions
 
     AKPannerDSPKernel() {}
 
     void init(int _channels, double _sampleRate) override {
-        AKSporthKernel::init(_channels, _sampleRate);
+        AKSoundpipeKernel::init(_channels, _sampleRate);
 
         sp_panst_create(&panst);
         sp_panst_init(sp, panst);
@@ -47,7 +47,7 @@ public:
 
     void destroy() {
         sp_panst_destroy(&panst);
-        AKSporthKernel::destroy();
+        AKSoundpipeKernel::destroy();
     }
 
     void reset() {

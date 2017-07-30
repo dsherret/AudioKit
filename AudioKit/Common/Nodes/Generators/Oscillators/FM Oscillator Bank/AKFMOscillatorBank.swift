@@ -3,15 +3,14 @@
 //  AudioKit
 //
 //  Created by Aurelius Prochazka, revision history on Github.
-//  Copyright (c) 2016 Aurelius Prochazka. All rights reserved.
+//  Copyright © 2017 Aurelius Prochazka. All rights reserved.
 //
-
-import AVFoundation
 
 /// Frequency Modulation Polyphonic Oscillator
 ///
 open class AKFMOscillatorBank: AKPolyphonicNode, AKComponent {
     public typealias AKAudioUnitType = AKFMOscillatorBankAudioUnit
+    /// Four letter unique description of the node
     public static let ComponentDescription = AudioComponentDescription(generator: "fmob")
 
     // MARK: - Properties
@@ -19,7 +18,17 @@ open class AKFMOscillatorBank: AKPolyphonicNode, AKComponent {
     private var internalAU: AKAudioUnitType?
     private var token: AUParameterObserverToken?
 
-    fileprivate var waveform: AKTable?
+    /// Waveform of the oscillator
+    open var waveform: AKTable? {
+        //TODO: Add error checking for table size...needs to match init()
+        willSet {
+            if let wf = newValue {
+                for (i, sample) in wf.enumerated() {
+                    self.internalAU?.setWaveformValue(sample, at: UInt32(i))
+                }
+            }
+        }
+    }
     fileprivate var carrierMultiplierParameter: AUParameter?
     fileprivate var modulatingMultiplierParameter: AUParameter?
     fileprivate var modulationIndexParameter: AUParameter?
@@ -32,18 +41,20 @@ open class AKFMOscillatorBank: AKPolyphonicNode, AKComponent {
     fileprivate var detuningMultiplierParameter: AUParameter?
 
     /// Ramp Time represents the speed at which parameters are allowed to change
-    open var rampTime: Double = AKSettings.rampTime {
+    open dynamic var rampTime: Double = AKSettings.rampTime {
         willSet {
             internalAU?.rampTime = newValue
         }
     }
 
     /// This multiplied by the baseFrequency gives the carrier frequency.
-    open var carrierMultiplier: Double = 1.0 {
+    open dynamic var carrierMultiplier: Double = 1.0 {
         willSet {
             if carrierMultiplier != newValue {
-                if internalAU!.isSetUp() {
-                    carrierMultiplierParameter?.setValue(Float(newValue), originator: token!)
+                if internalAU?.isSetUp() ?? false {
+                    if let existingToken = token {
+                        carrierMultiplierParameter?.setValue(Float(newValue), originator: existingToken)
+                    }
                 } else {
                     internalAU?.carrierMultiplier = Float(newValue)
                 }
@@ -52,11 +63,13 @@ open class AKFMOscillatorBank: AKPolyphonicNode, AKComponent {
     }
 
     /// This multiplied by the baseFrequency gives the modulating frequency.
-    open var modulatingMultiplier: Double = 1 {
+    open dynamic var modulatingMultiplier: Double = 1 {
         willSet {
             if modulatingMultiplier != newValue {
-                if internalAU!.isSetUp() {
-                    modulatingMultiplierParameter?.setValue(Float(newValue), originator: token!)
+                if internalAU?.isSetUp() ?? false {
+                    if let existingToken = token {
+                        modulatingMultiplierParameter?.setValue(Float(newValue), originator: existingToken)
+                    }
                 } else {
                     internalAU?.modulatingMultiplier = Float(newValue)
                 }
@@ -65,11 +78,13 @@ open class AKFMOscillatorBank: AKPolyphonicNode, AKComponent {
     }
 
     /// This multiplied by the modulating frequency gives the modulation amplitude.
-    open var modulationIndex: Double = 1 {
+    open dynamic var modulationIndex: Double = 1 {
         willSet {
             if modulationIndex != newValue {
-                if internalAU!.isSetUp() {
-                    modulationIndexParameter?.setValue(Float(newValue), originator: token!)
+                if internalAU?.isSetUp() ?? false {
+                    if let existingToken = token {
+                        modulationIndexParameter?.setValue(Float(newValue), originator: existingToken)
+                    }
                 } else {
                     internalAU?.modulationIndex = Float(newValue)
                 }
@@ -77,14 +92,14 @@ open class AKFMOscillatorBank: AKPolyphonicNode, AKComponent {
         }
     }
 
-
-
     /// Attack time
-    open var attackDuration: Double = 0.1 {
+    open dynamic var attackDuration: Double = 0.1 {
         willSet {
             if attackDuration != newValue {
-                if internalAU!.isSetUp() {
-                    attackDurationParameter?.setValue(Float(newValue), originator: token!)
+                if internalAU?.isSetUp() ?? false {
+                    if let existingToken = token {
+                        attackDurationParameter?.setValue(Float(newValue), originator: existingToken)
+                    }
                 } else {
                     internalAU?.attackDuration = Float(newValue)
                 }
@@ -92,11 +107,13 @@ open class AKFMOscillatorBank: AKPolyphonicNode, AKComponent {
         }
     }
     /// Decay time
-    open var decayDuration: Double = 0.1 {
+    open dynamic var decayDuration: Double = 0.1 {
         willSet {
             if decayDuration != newValue {
-                if internalAU!.isSetUp() {
-                    decayDurationParameter?.setValue(Float(newValue), originator: token!)
+                if internalAU?.isSetUp() ?? false {
+                    if let existingToken = token {
+                        decayDurationParameter?.setValue(Float(newValue), originator: existingToken)
+                    }
                 } else {
                     internalAU?.decayDuration = Float(newValue)
                 }
@@ -104,11 +121,13 @@ open class AKFMOscillatorBank: AKPolyphonicNode, AKComponent {
         }
     }
     /// Sustain Level
-    open var sustainLevel: Double = 1.0 {
+    open dynamic var sustainLevel: Double = 1.0 {
         willSet {
             if sustainLevel != newValue {
-                if internalAU!.isSetUp() {
-                    sustainLevelParameter?.setValue(Float(newValue), originator: token!)
+                if internalAU?.isSetUp() ?? false {
+                    if let existingToken = token {
+                        sustainLevelParameter?.setValue(Float(newValue), originator: existingToken)
+                    }
                 } else {
                     internalAU?.sustainLevel = Float(newValue)
                 }
@@ -116,11 +135,13 @@ open class AKFMOscillatorBank: AKPolyphonicNode, AKComponent {
         }
     }
     /// Release time
-    open var releaseDuration: Double = 0.1 {
+    open dynamic var releaseDuration: Double = 0.1 {
         willSet {
             if releaseDuration != newValue {
-                if internalAU!.isSetUp() {
-                    releaseDurationParameter?.setValue(Float(newValue), originator: token!)
+                if internalAU?.isSetUp() ?? false {
+                    if let existingToken = token {
+                        releaseDurationParameter?.setValue(Float(newValue), originator: existingToken)
+                    }
                 } else {
                     internalAU?.releaseDuration = Float(newValue)
                 }
@@ -129,11 +150,13 @@ open class AKFMOscillatorBank: AKPolyphonicNode, AKComponent {
     }
 
     /// Frequency offset in Hz.
-    open var detuningOffset: Double = 0 {
+    open dynamic var detuningOffset: Double = 0 {
         willSet {
             if detuningOffset != newValue {
-                if internalAU!.isSetUp() {
-                    detuningOffsetParameter?.setValue(Float(newValue), originator: token!)
+                if internalAU?.isSetUp() ?? false {
+                    if let existingToken = token {
+                        detuningOffsetParameter?.setValue(Float(newValue), originator: existingToken)
+                    }
                 } else {
                     internalAU?.detuningOffset = Float(newValue)
                 }
@@ -142,11 +165,13 @@ open class AKFMOscillatorBank: AKPolyphonicNode, AKComponent {
     }
 
     /// Frequency detuning multiplier
-    open var detuningMultiplier: Double = 1 {
+    open dynamic var detuningMultiplier: Double = 1 {
         willSet {
             if detuningMultiplier != newValue {
-                if internalAU!.isSetUp() {
-                    detuningMultiplierParameter?.setValue(Float(newValue), originator: token!)
+                if internalAU?.isSetUp() ?? false {
+                    if let existingToken = token {
+                        detuningMultiplierParameter?.setValue(Float(newValue), originator: existingToken)
+                    }
                 } else {
                     internalAU?.detuningMultiplier = Float(newValue)
                 }
@@ -155,7 +180,7 @@ open class AKFMOscillatorBank: AKPolyphonicNode, AKComponent {
     }
 
     // MARK: - Initialization
-    
+
     /// Initialize the oscillator with defaults
     public convenience override init() {
         self.init(waveform: AKTable(.sine))
@@ -187,7 +212,6 @@ open class AKFMOscillatorBank: AKPolyphonicNode, AKComponent {
         detuningOffset: Double = 0,
         detuningMultiplier: Double = 1) {
 
-
         self.waveform = waveform
         self.carrierMultiplier = carrierMultiplier
         self.modulatingMultiplier = modulatingMultiplier
@@ -203,53 +227,53 @@ open class AKFMOscillatorBank: AKPolyphonicNode, AKComponent {
         _Self.register()
 
         super.init()
-        AVAudioUnit._instantiate(with: _Self.ComponentDescription) {
-            avAudioUnit in
+        AVAudioUnit._instantiate(with: _Self.ComponentDescription) { [weak self] avAudioUnit in
 
-            self.avAudioNode = avAudioUnit
-            self.internalAU = avAudioUnit.auAudioUnit as? AKAudioUnitType
+            self?.avAudioNode = avAudioUnit
+            self?.internalAU = avAudioUnit.auAudioUnit as? AKAudioUnitType
 
-            self.internalAU?.setupWaveform(Int32(waveform.count))
+            self?.internalAU?.setupWaveform(Int32(waveform.count))
             for (i, sample) in waveform.enumerated() {
-                self.internalAU?.setWaveformValue(sample, at: UInt32(i))
+                self?.internalAU?.setWaveformValue(sample, at: UInt32(i))
             }
         }
 
-        guard let tree = internalAU?.parameterTree else { return }
+        guard let tree = internalAU?.parameterTree else {
+            return
+        }
 
-        carrierMultiplierParameter    = tree["carrierMultiplier"]
+        carrierMultiplierParameter = tree["carrierMultiplier"]
         modulatingMultiplierParameter = tree["modulatingMultiplier"]
-        modulationIndexParameter      = tree["modulationIndex"]
+        modulationIndexParameter = tree["modulationIndex"]
 
-        attackDurationParameter     = tree["attackDuration"]
-        decayDurationParameter      = tree["decayDuration"]
-        sustainLevelParameter       = tree["sustainLevel"]
-        releaseDurationParameter    = tree["releaseDuration"]
-        detuningOffsetParameter     = tree["detuningOffset"]
+        attackDurationParameter = tree["attackDuration"]
+        decayDurationParameter = tree["decayDuration"]
+        sustainLevelParameter = tree["sustainLevel"]
+        releaseDurationParameter = tree["releaseDuration"]
+        detuningOffsetParameter = tree["detuningOffset"]
         detuningMultiplierParameter = tree["detuningMultiplier"]
 
-        token = tree.token (byAddingParameterObserver: {
-            address, value in
+        token = tree.token (byAddingParameterObserver: { [weak self] address, value in
 
             DispatchQueue.main.async {
-                if address == self.carrierMultiplierParameter!.address {
-                    self.carrierMultiplier = Double(value)
-                } else if address == self.modulatingMultiplierParameter!.address {
-                    self.modulatingMultiplier = Double(value)
-                } else if address == self.modulationIndexParameter!.address {
-                    self.modulationIndex = Double(value)
-                } else if address == self.attackDurationParameter!.address {
-                    self.attackDuration = Double(value)
-                } else if address == self.decayDurationParameter!.address {
-                    self.decayDuration = Double(value)
-                } else if address == self.sustainLevelParameter!.address {
-                    self.sustainLevel = Double(value)
-                } else if address == self.releaseDurationParameter!.address {
-                    self.releaseDuration = Double(value)
-                } else if address == self.detuningOffsetParameter!.address {
-                    self.detuningOffset = Double(value)
-                } else if address == self.detuningMultiplierParameter!.address {
-                    self.detuningMultiplier = Double(value)
+                if address == self?.carrierMultiplierParameter?.address {
+                    self?.carrierMultiplier = Double(value)
+                } else if address == self?.modulatingMultiplierParameter?.address {
+                    self?.modulatingMultiplier = Double(value)
+                } else if address == self?.modulationIndexParameter?.address {
+                    self?.modulationIndex = Double(value)
+                } else if address == self?.attackDurationParameter?.address {
+                    self?.attackDuration = Double(value)
+                } else if address == self?.decayDurationParameter?.address {
+                    self?.decayDuration = Double(value)
+                } else if address == self?.sustainLevelParameter?.address {
+                    self?.sustainLevel = Double(value)
+                } else if address == self?.releaseDurationParameter?.address {
+                    self?.releaseDuration = Double(value)
+                } else if address == self?.detuningOffsetParameter?.address {
+                    self?.detuningOffset = Double(value)
+                } else if address == self?.detuningMultiplierParameter?.address {
+                    self?.detuningMultiplier = Double(value)
                 }
             }
         })
@@ -268,13 +292,13 @@ open class AKFMOscillatorBank: AKPolyphonicNode, AKComponent {
 
     // MARK: - AKPolyphonic
 
-    /// Function to start, play, or activate the node, all do the same thing
-    open override func play(noteNumber: MIDINoteNumber, velocity: MIDIVelocity) {
-        self.internalAU!.startNote(Int32(noteNumber), velocity: Int32(velocity))
+    // Function to start, play, or activate the node at frequency
+    open override func play(noteNumber: MIDINoteNumber, velocity: MIDIVelocity, frequency: Double) {
+        internalAU?.startNote(noteNumber, velocity: velocity, frequency: Float(frequency))
     }
 
     /// Function to stop or bypass the node, both are equivalent
     open override func stop(noteNumber: MIDINoteNumber) {
-        self.internalAU!.stopNote(Int32(noteNumber))
+        internalAU?.stopNote(noteNumber)
     }
 }

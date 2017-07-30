@@ -3,11 +3,8 @@
 //  AudioKit
 //
 //  Created by Aurelius Prochazka, revision history on Github.
-//  Copyright © 2016 AudioKit. All rights reserved.
+//  Copyright © 2017 Aurelius Prochazka. All rights reserved.
 //
-
-import Foundation
-import AVFoundation
 
 extension AVAudioConnectionPoint {
     convenience init(_ node: AKNode, to bus: Int) {
@@ -17,10 +14,10 @@ extension AVAudioConnectionPoint {
 
 /// Parent class for all nodes in AudioKit
 @objc open class AKNode: NSObject {
-    
+
     /// The internal AVAudioEngine AVAudioNode
     open var avAudioNode: AVAudioNode
-    
+
     /// An array of all connections
     internal var connectionPoints = [AVAudioConnectionPoint]()
 
@@ -29,6 +26,7 @@ extension AVAudioConnectionPoint {
         self.avAudioNode = AVAudioNode()
     }
 
+    /// Initialize the node
     public init(avAudioNode: AVAudioNode, attach: Bool = false) {
       self.avAudioNode = avAudioNode
       if attach {
@@ -41,18 +39,36 @@ extension AVAudioConnectionPoint {
         connectionPoints.append(AVAudioConnectionPoint(node, to: bus))
         AudioKit.engine.connect(avAudioNode,
                                 to: connectionPoints,
-                                fromBus: bus,
+                                fromBus: 0,
                                 format: AudioKit.format)
     }
-    
-    deinit {
-        AudioKit.engine.detach(self.avAudioNode)
+
+    /// Disconnect the node
+    open func disconnect() {
+        disconnect(nodes: [self.avAudioNode])
+    }
+
+    /// Disconnect an array of nodes
+    open func disconnect(nodes: [AVAudioNode]) {
+        for node in nodes {
+            AudioKit.engine.disconnectNodeInput(node)
+            AudioKit.engine.disconnectNodeOutput(node)
+            AudioKit.engine.detach(node)
+        }
     }
 }
 
 /// Protocol for responding to play and stop of MIDI notes
 public protocol AKPolyphonic {
-    
+
+    /// Play a sound corresponding to a MIDI note
+    ///
+    /// - Parameters:
+    ///   - noteNumber: MIDI Note Number
+    ///   - velocity:   MIDI Velocity
+    ///   - frequency:  Play this frequency
+    func play(noteNumber: MIDINoteNumber, velocity: MIDIVelocity, frequency: Double)
+
     /// Play a sound corresponding to a MIDI note
     ///
     /// - Parameters:
@@ -60,7 +76,7 @@ public protocol AKPolyphonic {
     ///   - velocity:   MIDI Velocity
     ///
     func play(noteNumber: MIDINoteNumber, velocity: MIDIVelocity)
-    
+
     /// Stop a sound corresponding to a MIDI note
     ///
     /// - parameter noteNumber: MIDI Note Number
@@ -69,8 +85,22 @@ public protocol AKPolyphonic {
 }
 
 /// Bare bones implementation of AKPolyphonic protocol
-open class AKPolyphonicNode: AKNode, AKPolyphonic {
-    
+@objc open class AKPolyphonicNode: AKNode, AKPolyphonic {
+
+    /// Global tuning table used by AKPolyphonicNode (AKNode classes adopting AKPolyphonic protocol)
+    open static var tuningTable = AKTuningTable()
+
+    /// Play a sound corresponding to a MIDI note with frequency
+    ///
+    /// - Parameters:
+    ///   - noteNumber: MIDI Note Number
+    ///   - velocity:   MIDI Velocity
+    ///   - frequency:  Play this frequency
+    ///
+    open func play(noteNumber: MIDINoteNumber, velocity: MIDIVelocity, frequency: Double) {
+        AKLog("Playing note: \(noteNumber), velocity: \(velocity), frequency: \(frequency), override in subclass")
+    }
+
     /// Play a sound corresponding to a MIDI note
     ///
     /// - Parameters:
@@ -78,9 +108,14 @@ open class AKPolyphonicNode: AKNode, AKPolyphonic {
     ///   - velocity:   MIDI Velocity
     ///
     open func play(noteNumber: MIDINoteNumber, velocity: MIDIVelocity) {
-        AKLog("Playing note \(noteNumber), with velocity \(velocity), override in subclass")
+
+        // MARK: Microtonal pitch lookup
+        // default implementation is 12 ET
+        let frequency = AKPolyphonicNode.tuningTable.frequency(forNoteNumber: noteNumber)
+//        AKLog("Playing note: \(noteNumber), velocity: \(velocity), using tuning table frequency: \(frequency)")
+        self.play(noteNumber: noteNumber, velocity: velocity, frequency: frequency)
     }
-    
+
     /// Stop a sound corresponding to a MIDI note
     ///
     /// - parameter noteNumber: MIDI Note Number
@@ -90,42 +125,41 @@ open class AKPolyphonicNode: AKNode, AKPolyphonic {
     }
 }
 
-
 /// Protocol for dictating that a node can be in a started or stopped state
 public protocol AKToggleable {
     /// Tells whether the node is processing (ie. started, playing, or active)
     var isStarted: Bool { get }
-    
+
     /// Function to start, play, or activate the node, all do the same thing
     func start()
-    
+
     /// Function to stop or bypass the node, both are equivalent
     func stop()
 }
 
 /// Default functions for nodes that conform to AKToggleable
 public extension AKToggleable {
-    
+
     /// Synonym for isStarted that may make more sense with musical instruments
     public var isPlaying: Bool {
         return isStarted
     }
-    
+
     /// Antonym for isStarted
     public var isStopped: Bool {
         return !isStarted
     }
-    
+
     /// Antonym for isStarted that may make more sense with effects
     public var isBypassed: Bool {
         return !isStarted
     }
-    
+
     /// Synonym to start that may more more sense with musical instruments
     public func play() {
         start()
     }
-    
+
     /// Synonym for stop that may make more sense with effects
     public func bypass() {
         stop()

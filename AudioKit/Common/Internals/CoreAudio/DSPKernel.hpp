@@ -64,36 +64,19 @@ public:
 
 class AKParametricKernel {
 protected:
-    virtual ParameterRamper *getRamper(AUParameterAddress address) = 0;
+    virtual ParameterRamper& getRamper(AUParameterAddress address) = 0;
 
 public:
+
     AUValue getParameter(AUParameterAddress address) {
-        ParameterRamper *ramper = getRamper(address);
-        if (ramper != nullptr) {
-            return ramper->getUIValue();
-        }
-        return 0.0f;
+        return getRamper(address).getUIValue();
     }
 
     void setParameter(AUParameterAddress address, AUValue value) {
-        ParameterRamper *ramper = getRamper(address);
-        if (ramper != nullptr) {
-            return ramper->setUIValue(value);
-        }
+        return getRamper(address).setUIValue(value);
     }
-
-    void setParameter(AUParameter *parameter) {
-        ParameterRamper *ramper = getRamper(parameter.address);
-        if (ramper != nullptr) {
-            return ramper->setUIValue(parameter.value);
-        }
-    }
-
-    void startRamp(AUParameterAddress address, AUValue value, AUAudioFrameCount duration) {
-        ParameterRamper *ramper = getRamper(address);
-        if (ramper != nullptr) {
-            return ramper->startRamp(value, duration);
-        }
+    virtual void startRamp(AUParameterAddress address, AUValue value, AUAudioFrameCount duration) {
+        getRamper(address).startRamp(value, duration);
     }
 };
 
@@ -117,14 +100,16 @@ public:
     }
 };
 
-class AKSporthKernel: public AKDSPKernel {
+class AKSoundpipeKernel: public AKDSPKernel {
 protected:
     sp_data *sp = nullptr;
 public:
-//    AKSporthKernel(int _channels, float _sampleRate) {
+//    AKSoundpipeKernel(int _channels, float _sampleRate):
+//        AKDSPKernel(_channels, _sampleRate) {
 //
 //      sp_create(&sp);
-//
+//      sp->sr = _sampleRate;
+//      sp->nchan = _channels;
 //    }
 
     void init(int _channels, double _sampleRate) override {
@@ -134,11 +119,14 @@ public:
       sp->nchan = _channels;
     }
 
-    ~AKSporthKernel() {
+    ~AKSoundpipeKernel() {
+        //printf("~AKSoundpipeKernel(), &sp is %p\n", (void *)sp);
+        // releasing the memory in the destructor only
         sp_destroy(&sp);
     }
+    
     void destroy() {
-        sp_destroy(&sp);
+        //printf("AKSoundpipeKernel.destroy(), &sp is %p\n", (void *)sp);
     }
 };
 

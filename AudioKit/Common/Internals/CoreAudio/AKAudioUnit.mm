@@ -2,8 +2,8 @@
 //  AKAudioUnit.mm
 //  AudioKit
 //
-//  Created by Aurelius Prochazka on 11/28/16.
-//  Copyright © 2016 AudioKit. All rights reserved.
+//  Created by Aurelius Prochazka, revision history on Github.
+//  Copyright © 2017 Aurelius Prochazka. All rights reserved.
 //
 
 #import "AKAudioUnit.h"
@@ -69,6 +69,14 @@
 }
 - (AUAudioUnitBusArray *)outputBusses {
     return _outputBusArray;
+}
+
+-(AUImplementorValueProvider)getter {
+  return _parameterTree.implementorValueProvider;
+}
+
+-(AUImplementorValueObserver)setter {
+  return _parameterTree.implementorValueObserver;
 }
 
 #pragma mark - AUAudioUnit Overrides
@@ -166,5 +174,23 @@
     };
     return tree;
 
+}
+@end
+
+
+
+@implementation AVAudioNode(Ext)
+-(instancetype)initWithComponent:(AudioComponentDescription)component {
+		self = [self init];
+		__block AVAudioNode * __strong * _this = &self;
+
+  [AVAudioUnit instantiateWithComponentDescription:component
+                                           options:0
+                                 completionHandler:^(__kindof AVAudioUnit * _Nullable audioUnit,
+                                                     NSError * _Nullable error) {
+
+                                   *_this = audioUnit;
+                                 }];
+  return self;
 }
 @end

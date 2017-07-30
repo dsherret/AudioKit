@@ -3,7 +3,7 @@
 //  AudioKit
 //
 //  Created by Aurelius Prochazka, revision history on Github.
-//  Copyright (c) 2016 Aurelius Prochazka. All rights reserved.
+//  Copyright © 2017 Aurelius Prochazka. All rights reserved.
 //
 
 #pragma once
@@ -27,14 +27,14 @@ enum {
     strikeWidthAddress = 6
 };
 
-class AKMetalBarDSPKernel : public AKSporthKernel, public AKOutputBuffered {
+class AKMetalBarDSPKernel : public AKSoundpipeKernel, public AKOutputBuffered {
 public:
     // MARK: Member Functions
 
     AKMetalBarDSPKernel() {}
 
     void init(int _channels, double _sampleRate) override {
-        AKSporthKernel::init(_channels, _sampleRate);
+        AKSoundpipeKernel::init(_channels, _sampleRate);
         sp_bar_create(&bar);
         sp_bar_init(sp, bar, 3, 0.0001);
 //        bar->bcL = 2;
@@ -56,7 +56,7 @@ public:
 
     void destroy() {
         sp_bar_destroy(&bar);
-        AKSporthKernel::destroy();
+        AKSoundpipeKernel::destroy();
     }
 
     void reset() {

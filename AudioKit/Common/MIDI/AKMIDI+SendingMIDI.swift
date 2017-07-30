@@ -3,7 +3,7 @@
 //  AudioKit
 //
 //  Created by Aurelius Prochazka, revision history on Github.
-//  Copyright © 2016 AudioKit. All rights reserved.
+//  Copyright © 2017 Aurelius Prochazka. All rights reserved.
 //
 
 internal extension Collection where Index == Int {
@@ -18,7 +18,9 @@ internal extension Collection where Index == Int {
 
 func MIDIOutputPort(client: MIDIClientRef, name: CFString) -> MIDIPortRef? {
     var port: MIDIPortRef = 0
-    guard MIDIOutputPortCreate(client, name, &port) == noErr else { return nil }
+    guard MIDIOutputPortCreate(client, name, &port) == noErr else {
+        return nil
+    }
     return port
 }
 
@@ -33,7 +35,7 @@ internal struct MIDIDestinations: Collection {
     }
 
     subscript (index: Index) -> Element {
-      return MIDIGetDestination(index)
+        return MIDIGetDestination(index)
     }
 }
 
@@ -49,31 +51,39 @@ extension AKMIDI {
     /// Array of destination names
     public var destinationNames: [String] {
         return MIDIDestinations().names
-  }
-
+    }
 
     /// Open a MIDI Output Port
     ///
+    /// Destination name (string) can be empty for some hardware device;
+    /// So optional string is better for checking and targeting the device.
+    ///
     /// - parameter namedOutput: String containing the name of the MIDI Input
     ///
-    public func openOutput(_ namedOutput: String = "") {
-        outputPort = MIDIOutputPort(client: client, name: outputPortName)!
+    public func openOutput(_ namedOutput: String? = nil) {
+        guard let tempPort = MIDIOutputPort(client: client, name: outputPortName) else {
+            return
+        }
+        outputPort = tempPort
 
-        _ = zip(destinationNames, MIDIDestinations()).first {
-            (name, _) in
-            namedOutput.isEmpty || namedOutput == name
-        }.map {
-          endpoints[$0] = $1
+        // To get all endpoints; and set in endpoints array (mapping without condition)
+        if namedOutput == nil {
+            _ = zip(destinationNames, MIDIDestinations()).map {
+                endpoints[$0] = $1
+            }
+        } else {
+            // To get only  endpoint with name provided in namedOutput (conditional mapping)
+            _ = zip(destinationNames, MIDIDestinations()).first { name, _ in namedOutput! == name }.map {
+                endpoints[$0] = $1
+            }
         }
     }
-
     /// Send Message with data
-    public func sendMessage(_ data: [UInt8]) {
+    public func sendMessage(_ data: [MIDIByte]) {
         let packetListPointer: UnsafeMutablePointer<MIDIPacketList> = UnsafeMutablePointer.allocate(capacity: 1)
 
-        var packet: UnsafeMutablePointer<MIDIPacket>? = nil
-        packet = MIDIPacketListInit(packetListPointer)
-        packet = MIDIPacketListAdd(packetListPointer, 1024, packet!, 0, data.count, data)
+        var packet = MIDIPacketListInit(packetListPointer)
+        packet = MIDIPacketListAdd(packetListPointer, 1_024, packet, 0, data.count, data)
         for endpoint in endpoints.values {
             let result = MIDISend(outputPort, endpoint, packetListPointer)
             if result != noErr {
@@ -94,33 +104,33 @@ extension AKMIDI {
         endpoints.removeAll()
     }
 
-    /// Send Messsage from midi event data
+    /// Send Messsage from MIDI event data
     public func sendEvent(_ event: AKMIDIEvent) {
         sendMessage(event.internalData)
     }
 
     /// Send a Note On Message
     public func sendNoteOnMessage(noteNumber: MIDINoteNumber,
-                                             velocity: MIDIVelocity,
-                                             channel: MIDIChannel = 0) {
-        let noteCommand: UInt8 = UInt8(0x90) + UInt8(channel)
-        let message: [UInt8] = [noteCommand, UInt8(noteNumber), UInt8(velocity)]
+                                  velocity: MIDIVelocity,
+                                  channel: MIDIChannel = 0) {
+        let noteCommand: MIDIByte = MIDIByte(0x90) + channel
+        let message: [MIDIByte] = [noteCommand, noteNumber, velocity]
         self.sendMessage(message)
     }
 
     /// Send a Note Off Message
     public func sendNoteOffMessage(noteNumber: MIDINoteNumber,
-                                             velocity: MIDIVelocity,
-                                             channel: MIDIChannel = 0) {
-        let noteCommand: UInt8 = UInt8(0x80) + UInt8(channel)
-        let message: [UInt8] = [noteCommand, UInt8(noteNumber), UInt8(velocity)]
+                                   velocity: MIDIVelocity,
+                                   channel: MIDIChannel = 0) {
+        let noteCommand: MIDIByte = MIDIByte(0x80) + channel
+        let message: [MIDIByte] = [noteCommand, noteNumber, velocity]
         self.sendMessage(message)
     }
 
     /// Send a Continuous Controller message
-    public func sendControllerMessage(_ control: Int, value: Int, channel: MIDIChannel = 0) {
-        let controlCommand: UInt8 = UInt8(0xB0) + UInt8(channel)
-        let message: [UInt8] = [controlCommand, UInt8(control), UInt8(value)]
+    public func sendControllerMessage(_ control: MIDIByte, value: MIDIByte, channel: MIDIChannel = 0) {
+        let controlCommand: MIDIByte = MIDIByte(0xB0) + channel
+        let message: [MIDIByte] = [controlCommand, control, value]
         self.sendMessage(message)
     }
 

@@ -3,7 +3,7 @@
 //  AudioKit
 //
 //  Created by Aurelius Prochazka, revision history on Github.
-//  Copyright (c) 2016 Aurelius Prochazka. All rights reserved.
+//  Copyright © 2017 Aurelius Prochazka. All rights reserved.
 //
 
 #pragma once
@@ -17,21 +17,21 @@ extern "C" {
 #include "soundpipe.h"
 }
 
-enum {
-    halfPowerPointAddress = 0
-};
-
-class AKAmplitudeTrackerDSPKernel : public AKSporthKernel, public AKBuffered {
+class AKAmplitudeTrackerDSPKernel : public AKSoundpipeKernel, public AKBuffered {
 public:
     // MARK: Member Functions
 
     AKAmplitudeTrackerDSPKernel() {}
 
     void init(int _channels, double _sampleRate) override {
-        AKSporthKernel::init(_channels, _sampleRate);
+        AKSoundpipeKernel::init(_channels, _sampleRate);
         sp_rms_create(&rms);
+        rms->ihp = halfPowerPoint;
         sp_rms_init(sp, rms);
-        rms->ihp = 10;
+    }
+    
+    void setThreshold(float value) {
+        threshold = value;
     }
 
     void start() {
@@ -43,48 +43,37 @@ public:
     }
 
     void destroy() {
+        //printf("AKAmplitudeTrackerDSPKernel.destroy() \n");
+        AKSoundpipeKernel::destroy();
         sp_rms_destroy(&rms);
-        AKSporthKernel::destroy();
     }
 
     void reset() {
     }
+    
+    void setHalfPowerPoint(float value) {
+        halfPowerPoint = value;
+    }
+    
+//    void setSmoothness(float value) {
+//        smoothness = value;
+//    } //in development
 
     void setParameter(AUParameterAddress address, AUValue value) {
-        switch (address) {
-            case halfPowerPointAddress:
-                halfPowerPointRamper.setUIValue(clamp(value, (float)0, (float)20000));
-                break;
-
-        }
     }
-
+    
     AUValue getParameter(AUParameterAddress address) {
-        switch (address) {
-            case halfPowerPointAddress:
-                return halfPowerPointRamper.getUIValue();
-
-            default: return 0.0f;
-        }
+        return 0.0f;
     }
-
+    
     void startRamp(AUParameterAddress address, AUValue value, AUAudioFrameCount duration) override {
-        switch (address) {
-            case halfPowerPointAddress:
-                halfPowerPointRamper.startRamp(clamp(value, (float)0, (float)20000), duration);
-                break;
-
-        }
     }
 
     void process(AUAudioFrameCount frameCount, AUAudioFrameCount bufferOffset) override {
 
         for (int frameIndex = 0; frameIndex < frameCount; ++frameIndex) {
-            double halfPowerPoint = double(halfPowerPointRamper.getAndStep());
 
             int frameOffset = int(frameIndex + bufferOffset);
-
-            rms->ihp = (float)halfPowerPoint;
 
             for (int channel = 0; channel < channels; ++channel) {
                 float *in  = (float *)inBufferListPtr->mBuffers[channel].mData  + frameOffset;
@@ -99,6 +88,18 @@ public:
                 *out = temp;
             }
         }
+        
+        bool wasAboveThreshold = isAboveThreshold;
+        
+        if (trackedAmplitude > threshold && !wasAboveThreshold) {
+            isAboveThreshold = true;
+            thresholdCallback(true);
+        }
+        if (wasAboveThreshold && trackedAmplitude < threshold) {
+            isAboveThreshold = false;
+            thresholdCallback(false);
+        }
+        
     }
 
     // MARK: Member Variables
@@ -106,9 +107,13 @@ public:
 private:
 
     sp_rms *rms;
-
+    float threshold = 1.0;
+    float halfPowerPoint = 10;
 public:
-    ParameterRamper halfPowerPointRamper = 10;
     bool started = true;
+    bool resetted = false;
     float trackedAmplitude = 0.0;
+    bool isAboveThreshold = false;
+    //float smoothness = 0.05; //in development
+    AKThresholdCallback thresholdCallback = nullptr;
 };

@@ -3,16 +3,15 @@
 //  AudioKit
 //
 //  Created by Aurelius Prochazka, revision history on Github.
-//  Copyright (c) 2016 Aurelius Prochazka. All rights reserved.
+//  Copyright © 2017 Aurelius Prochazka. All rights reserved.
 //
 
-import AVFoundation
-
-/// Implements the DC blocking filter Y[i] = X[i] - X[i-1] + (igain * Y[i-1]) 
+/// Implements the DC blocking filter Y[i] = X[i] - X[i-1] + (igain * Y[i-1])
 /// Based on work by Perry Cook.
 ///
 open class AKDCBlock: AKNode, AKToggleable, AKComponent {
     public typealias AKAudioUnitType = AKDCBlockAudioUnit
+    /// Four letter unique description of the node
     public static let ComponentDescription = AudioComponentDescription(effect: "dcbk")
 
     // MARK: - Properties
@@ -21,8 +20,8 @@ open class AKDCBlock: AKNode, AKToggleable, AKComponent {
     private var token: AUParameterObserverToken?
 
     /// Tells whether the node is processing (ie. started, playing, or active)
-    open var isStarted: Bool {
-        return internalAU!.isPlaying()
+    open dynamic var isStarted: Bool {
+        return internalAU?.isPlaying() ?? false
     }
 
     // MARK: - Initialization
@@ -31,17 +30,16 @@ open class AKDCBlock: AKNode, AKToggleable, AKComponent {
     ///
     /// - parameter input: Input node to process
     ///
-    public init( _ input: AKNode) {
+    public init( _ input: AKNode?) {
         _Self.register()
 
         super.init()
-        AVAudioUnit._instantiate(with: _Self.ComponentDescription) {
-            avAudioUnit in
+        AVAudioUnit._instantiate(with: _Self.ComponentDescription) { [weak self] avAudioUnit in
 
-            self.avAudioNode = avAudioUnit
-            self.internalAU = avAudioUnit.auAudioUnit as? AKAudioUnitType
+            self?.avAudioNode = avAudioUnit
+            self?.internalAU = avAudioUnit.auAudioUnit as? AKAudioUnitType
 
-            input.addConnectionPoint(self)
+            input?.addConnectionPoint(self!)
         }
     }
 
@@ -49,11 +47,11 @@ open class AKDCBlock: AKNode, AKToggleable, AKComponent {
 
     /// Function to start, play, or activate the node, all do the same thing
     open func start() {
-        self.internalAU!.start()
+        internalAU?.start()
     }
 
     /// Function to stop or bypass the node, both are equivalent
     open func stop() {
-        self.internalAU!.stop()
+        internalAU?.stop()
     }
 }

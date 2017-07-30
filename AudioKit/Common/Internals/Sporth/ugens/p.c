@@ -1,7 +1,7 @@
 #include <math.h>
 #include "plumber.h"
 
-int plumber_set_var(plumber_data *pd, char *name, SPFLOAT *var);
+int plumber_set_var(plumber_data *pd, const char *name, SPFLOAT *var);
 
 int sporth_p(sporth_stack *stack, void *ud)
 {
@@ -12,12 +12,12 @@ int sporth_p(sporth_stack *stack, void *ud)
         case PLUMBER_CREATE:
 
 #ifdef DEBUG_MODE
-            fprintf(stderr, "p: creating\n");
+            plumber_print(pd, "p: creating\n");
 #endif
             plumber_add_ugen(pd, SPORTH_P, NULL);
 
             if(sporth_check_args(stack, "f") != SPORTH_OK) {
-                fprintf(stderr,"Not enough arguments for P\n");
+                plumber_print(pd,"Not enough arguments for P\n");
                 stack->error++;
                 return PLUMBER_NOTOK;
             }
@@ -48,7 +48,7 @@ int sporth_p(sporth_stack *stack, void *ud)
         case PLUMBER_DESTROY:
             break;
         default:
-            fprintf(stderr, "switch: unknown mode!\n");
+            plumber_print(pd, "switch: unknown mode!\n");
             break;
     }
     return PLUMBER_OK;
@@ -64,12 +64,12 @@ int sporth_pset(sporth_stack *stack, void *ud)
         case PLUMBER_CREATE:
 
 #ifdef DEBUG_MODE
-            fprintf(stderr, "p: creating\n");
+            plumber_print(pd, "p: creating\n");
 #endif
 
             plumber_add_ugen(pd, SPORTH_PSET, NULL);
             if(sporth_check_args(stack, "ff") != SPORTH_OK) {
-                fprintf(stderr,"Pset: Not enough arguments\n");
+                plumber_print(pd,"Pset: Not enough arguments\n");
                 stack->error++;
                 return PLUMBER_NOTOK;
             }
@@ -90,7 +90,7 @@ int sporth_pset(sporth_stack *stack, void *ud)
         case PLUMBER_DESTROY:
             break;
         default:
-            fprintf(stderr, "pset: unknown mode!\n");
+            plumber_print(pd, "pset: unknown mode!\n");
             break;
     }
     return PLUMBER_OK;
@@ -99,7 +99,7 @@ int sporth_pset(sporth_stack *stack, void *ud)
 int sporth_palias(sporth_stack *stack, void *ud)
 {
     plumber_data *pd = ud;
-    char *name;
+    const char *name;
     int id;
     SPFLOAT *foo;
 
@@ -107,7 +107,7 @@ int sporth_palias(sporth_stack *stack, void *ud)
         case PLUMBER_CREATE:
             plumber_add_ugen(pd, SPORTH_PALIAS, NULL);
             if(sporth_check_args(stack, "sf") != SPORTH_OK) {
-                fprintf(stderr,"palias: Not enough arguments\n");
+                plumber_print(pd,"palias: Not enough arguments\n");
                 stack->error++;
                 return PLUMBER_NOTOK;
             }

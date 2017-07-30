@@ -3,10 +3,12 @@
 //  AudioKit
 //
 //  Created by Aurelius Prochazka, revision history on Github.
-//  Copyright (c) 2015 Aurelius Prochazka. All rights reserved.
+//  Copyright © 2017 Aurelius Prochazka. All rights reserved.
 //
 
 #pragma once
+
+#import <vector>
 
 #import "DSPKernel.hpp"
 #import "ParameterRamper.hpp"
@@ -17,18 +19,22 @@ extern "C" {
 #include "plumber.h"
 }
 
+#import "AKCustomUgenInfo.h"
 
-class AKOperationGeneratorDSPKernel : public AKSporthKernel, public AKOutputBuffered {
+static int addUgensToKernel(plumber_data *pd, void *ud);
+
+class AKOperationGeneratorDSPKernel : public AKSoundpipeKernel, public AKOutputBuffered {
 public:
     // MARK: Member Functions
 
     AKOperationGeneratorDSPKernel() {}
 
     void init(int _channels, double _sampleRate) override {
-        AKSporthKernel::init(_channels, _sampleRate);
+        AKSoundpipeKernel::init(_channels, _sampleRate);
 
         plumber_register(&pd);
         plumber_init(&pd);
+        addUgensToFTable(&pd);
         pd.sp = sp;
         if (sporthCode != nil) {
             plumber_parse_string(&pd, sporthCode);
@@ -39,7 +45,13 @@ public:
     
     void setSporth(char *sporth) {
         sporthCode = sporth;
-        plumber_recompile_string(&pd, sporthCode);
+        plumber_recompile_string_v2(&pd, sporthCode, this, &addUgensToKernel);
+    }
+
+    void addUgensToFTable(plumber_data *pd) {
+      for (auto info : customUgens) {
+        plumber_ftmap_add_function(pd, info.name, info.func, info.userData);
+      }
     }
     
     void trigger(int trigger) {
@@ -51,7 +63,11 @@ public:
             parameters[i] = params[i];
         }
     };
-    
+
+    void addCustomUgen(AKCustomUgenInfo info) {
+        customUgens.push_back(info);
+    }
+
     void start() {
         started = true;
     }
@@ -63,7 +79,7 @@ public:
 
     void destroy() {
         plumber_clean(&pd);
-        AKSporthKernel::destroy();
+        AKSoundpipeKernel::destroy();
     }
     
     void reset() {
@@ -131,9 +147,15 @@ private:
 
     plumber_data pd;
     char *sporthCode = nil;
-    
+    std::vector<AKCustomUgenInfo> customUgens;
+
 public:
     float parameters[14] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0};
     bool started = false;
 };
 
+static int addUgensToKernel(plumber_data *pd, void *ud) {
+  auto kernel = (AKOperationGeneratorDSPKernel *)ud;
+  kernel->addUgensToFTable(pd);
+  return PLUMBER_OK;
+}

@@ -1,15 +1,20 @@
-AudioKit V3.5
+AudioKit V3.7
 ===
 
 [![Build Status](https://travis-ci.org/audiokit/AudioKit.svg)](https://travis-ci.org/audiokit/AudioKit)
 [![License](https://img.shields.io/cocoapods/l/AudioKit.svg?style=flat)](https://github.com/audiokit/AudioKit/blob/master/LICENSE)
 [![Carthage compatible](https://img.shields.io/badge/Carthage-compatible-4BC51D.svg?style=flat)](https://github.com/Carthage/Carthage)
-[![CocoaPods compatible](https://img.shields.io/cocoapods/v/AudioKit.svg?style=flat)](https://github.com/CocoaPods/Specs/tree/master/Specs/AudioKit)
+[![CocoaPods compatible](https://img.shields.io/cocoapods/v/AudioKit.svg?style=flat)](https://cocoapods.org/pods/AudioKit)
 [![Platform](https://img.shields.io/cocoapods/p/AudioKit.svg?style=flat)](http://cocoadocs.org/docsets/AudioKit)
 <img src="https://img.shields.io/badge/%20in-swift%203.0-orange.svg">
 [![Twitter Follow](https://img.shields.io/twitter/follow/AudioKitMan.svg?style=social)](http://twitter.com/AudioKitMan)
 
-AudioKit is an audio synthesis, processing, and analysis platform for iOS, macOS, and tvOS. This document serves as a one-page introduction to AudioKit, but we have much more information available on the AudioKit website at http://audiokit.io/
+AudioKit is an audio synthesis, processing, and analysis platform for iOS, macOS, and tvOS. This document serves as a one-page introduction to AudioKit, but we have much more information available on the AudioKit websites:
+
+* [AudioKitPro.com](http://audiokitpro.com/) - AudioKit Features, Blog, and Highlighted Apps
+* [AudioKit.io](http://audiokit.io/) - AudioKit Developer Documentation
+
+Did you already build an app with AudioKit?  Let us know and we'll highlight it on AudioKitPro.com.
 
 If you need support, the best thing to do is to join AudioKit's google group:
 
@@ -33,7 +38,7 @@ As of AudioKit 3.4, we have moved to support Swift 3 exclusively. You will there
 ## Key Concepts
 
 ### Nodes
-Nodes are interconnectable signal processing components.  Each node has at least an ouput and most likely also has parameters.  If it is processing another signal, the node will also have an input.
+Nodes are interconnectable signal processing components.  Each node has at least an output and most likely also has parameters.  If it is processing another signal, the node will also have an input.
 
 ### Operations
 Operations are similar to nodes, except that they are a series of signal processing components that exist inside of a single node.  Operations can be used as parameters to other operations to create very complex processing results.
@@ -43,12 +48,18 @@ Taps use nodes as their data source, but do not redirect the audio signal away f
 
 ## Installation
 
-Installation can be achieved in the usual ways for a framework.  This is explained in more detail in the INSTALL.md file in the Frameworks directory.
+Installation can be achieved in the usual ways for a framework. More details are found in the [Frameworks README file](https://github.com/audiokit/AudioKit/blob/master/Frameworks/README.md).
 
-Installation with CocoaPods and Carthage is also planned but may not come with the first release.
+An AudioKit package is also available via [CocoaPods](https://cocoapods.org/pods/AudioKit) and Carthage.
+
+In most cases, when building for iOS or tvOS, regardless of how you install the framework, you will need to add a run phase to your project's target with the following script:
+
+```
+"$BUILT_PRODUCTS_DIR/$FRAMEWORKS_FOLDER_PATH/AudioKit.framework/fix-framework.sh"
+```
 
 ## Example Code
-There are three Hello World projects, one for each of the Apple platforms: OSX, iOS, and tvOS. They simply play an oscillator and display the waveform.
+There are three Hello World projects, one for each of the Apple platforms: iOS, macOS, and tvOS. They simply play an oscillator and display the waveform.
 
 The examples rely on the frameworks being built so you can either download the precompiled frameworks or build them on your own:
 
@@ -95,9 +106,7 @@ We have so many playground pages that it became difficult to maintain them in on
 * Filters - Frequency range modification
 * Analysis - Pitch and loudness detection, FFT spectrum analysis
 
-Because Playgrounds have some different capabilities on different platforms, there are a few playground pages available in OS Specific playgrounds for iOS and macOS.
-At this point tvOS behaves very much like iOS so there is no set of playgrounds explicitly for tvOS.
-
+Since AudioKit 3.6, we provide all playgrounds as a macOS project ready to run in Xcode. Just download the `AudioKitPlaygrounds.zip` file from our [releases page](https://github.com/audiokit/AudioKit/releases), open and build the project, and go to the playground pages to learn the API in a fun way!
 
 ## Tests
 
@@ -114,8 +123,19 @@ github "audiokit/AudioKit"
 If you use CocoaPods, you can also easily get the latest AudioKit binary framework for your project. Use this in your `Podfile`:
 
 ```
-pod 'AudioKit', '~> 3.5'
+pod 'AudioKit', '~> 3.7'
 ```
+
+## Ray Wenderlich's AudioKit Tutorial
+
+Check out the [AudioKit tutorial on the Ray Wenderlich site](https://www.raywenderlich.com/145770/audiokit-tutorial-getting-started). You’ll be taken on a fun and gentle journey through the framework via the history of sound synthesis and computer audio.
+
+## Contributing Code
+
+We welcome new contributors but we realize it can be daunting to suggest updates as a newcomer.  Here's what we are currently working on:  [AudioKit Works in Progress](https://github.com/audiokit/AudioKit/projects)
+
+Ready to send us a pull request? Please make sure your request is based on the [develop](https://github.com/audiokit/AudioKit/tree/develop) branch of the repository as `master` only holds stable releases.
+
 
 ## About Us
 
@@ -125,32 +145,9 @@ AudioKit was created by the following team whose contributions are fully chronic
 * **[Aurelius Prochazka](https://github.com/aure)**: Primary programmer of AudioKit. Lives for this stuff. Your life line if you need help.
 * **[Brandon Barber](https://github.com/roecrew/)**: Deep diver.  Contributed a lot of great pull requests.
 * **[Jeff Cooper](https://github.com/eljeff)**: Rearchitected all things MIDI, sampler, and sequencer related in AudioKit 3.
-* **[Laurent Veliscek](https://github.com/laurentVeliscek/)**: Master of the AKAudioFile, AKAudioPlayer, and recording nodes.
-* **[Matthew Fecher](https://github.com/swiftcodex)**: Sound design, graphic design, and programming of the Analog Synth X example.
+* **[Laurent Veliscek](https://github.com/laurentVeliscek/)**: Creator of the AKAudioFile, AKAudioPlayer, and recording nodes.
+* **[Matthew Fecher](https://github.com/swiftcodex)**:  Synth examples including AudioKit Synth One & Analog Synth X, both websites, evangelist.
 * **[Nicholas Arner](https://github.com/narner)**: Longtime contributor to AudioKit and AudioKit's web site.
 * **[Paul Batchelor](https://github.com/PaulBatchelor)**: The author of [Soundpipe](https://github.com/paulbatchelor/soundpipe), and [Sporth](https://github.com/paulbatchelor/sporth), which serve as two primary audio engines in AudioKit 3.
 * **[Stephane Peter](https://github.com/megastep)**: Installation and configuration czar and code reviewer.
-
-## Contributing Code
-
-We welcome new contributors but we realize it can be daunting to suggest updates as a newcomer.  Here's what we are currently working on:  [AudioKit Works in Progress](http://audiokit.io/wip/)
-
-Here are some resources that we use to develop our coding choices and core philosophies:
-
-## Avoid code smell
-
-* [Code Smell in Swift](http://www.bartjacobs.com/five-code-smells-in-swift-and-objective-c/)
-* [Code Smell in Objective-C](http://qualitycoding.org/objective-c-code-smells/)
-* [Code Smell of the Preprocessor](http://qualitycoding.org/preprocessor/)
-
-## Be aware of how to code for an open-source framework
-
-* [Tips for Writing a Great iOS Framework](https://medium.com/@samjarman/tips-for-writing-a-great-ios-framework-8cf3452f6c5d#.wzejktd3l)
-* [Best practices running an iOS open source project on GitHub](https://www.cocoanetics.com/2014/10/best-practices-running-an-ios-open-source-project-on-github/)
-
-## Interested in audio synthesis?
-
-* check out [Syntorial](http://www.syntorial.com/#a_aid=AudioKit), it's hands down the best way to learn about synthesis interactively, your best bet if you care about synthesis from the sound design point of view; an afternoon with this will help you understand more than any book or video
-
-* https://web.archive.org/web/20160403115835/http://www.soundonsound.com/sos/allsynthsecrets.htm very detailed, very thorough discussion of the topic of synthesis but almost too detailed on times
 

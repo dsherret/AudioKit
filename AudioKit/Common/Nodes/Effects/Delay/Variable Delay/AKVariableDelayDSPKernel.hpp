@@ -3,7 +3,7 @@
 //  AudioKit
 //
 //  Created by Aurelius Prochazka, revision history on Github.
-//  Copyright (c) 2016 Aurelius Prochazka. All rights reserved.
+//  Copyright © 2017 Aurelius Prochazka. All rights reserved.
 //
 
 #pragma once
@@ -22,14 +22,14 @@ enum {
     feedbackAddress = 1
 };
 
-class AKVariableDelayDSPKernel : public AKSporthKernel, public AKBuffered {
+class AKVariableDelayDSPKernel : public AKSoundpipeKernel, public AKBuffered {
 public:
     // MARK: Member Functions
 
     AKVariableDelayDSPKernel() {}
 
     void init(int _channels, double _sampleRate) override {
-        AKSporthKernel::init(_channels, _sampleRate);
+        AKSoundpipeKernel::init(_channels, _sampleRate);
 
         plumber_register(&pd);
         plumber_init(&pd);
@@ -53,7 +53,7 @@ public:
 
     void destroy() {
         plumber_clean(&pd);
-        AKSporthKernel::destroy();
+        AKSoundpipeKernel::destroy();
     }
 
     void reset() {

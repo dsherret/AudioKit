@@ -3,7 +3,7 @@
 //  AudioKit
 //
 //  Created by Aurelius Prochazka, revision history on Github.
-//  Copyright (c) 2016 Aurelius Prochazka. All rights reserved.
+//  Copyright © 2017 Aurelius Prochazka. All rights reserved.
 //
 
 #import "AKPhaseDistortionOscillatorBankAudioUnit.h"
@@ -50,11 +50,14 @@
     _kernel.setWaveformValue(index, value);
 }
 
-- (void)startNote:(int)note velocity:(int)velocity {
+- (void)startNote:(uint8_t)note velocity:(uint8_t)velocity {
     _kernel.startNote(note, velocity);
 }
+- (void)startNote:(uint8_t)note velocity:(uint8_t)velocity frequency:(float)frequency {
+    _kernel.startNote(note, velocity, frequency);
+}
 
-- (void)stopNote:(int)note {
+- (void)stopNote:(uint8_t)note {
     _kernel.stopNote(note);
 }
 
@@ -70,7 +73,7 @@
 
     // Create a parameter object for the phaseDistortion.
     AUParameter *phaseDistortionAUParameter = [AUParameter parameter:@"phaseDistortion"
-                                                                name:@"Pulse Width"
+                                                                name:@"Phase Distortion"
                                                              address:phaseDistortionAddress
                                                                  min:0.0
                                                                  max:1.0
@@ -129,8 +132,8 @@
     AUParameter *detuningMultiplierAUParameter = [AUParameter parameter:@"detuningMultiplier"
                                                                    name:@"Frequency detuning multiplier"
                                                                 address:detuningMultiplierAddress
-                                                                    min:0.5
-                                                                    max:2.0
+                                                                    min:0.0
+                                                                    max:FLT_MAX
                                                                    unit:kAudioUnitParameterUnit_Generic];
 
     // Initialize the parameter values.

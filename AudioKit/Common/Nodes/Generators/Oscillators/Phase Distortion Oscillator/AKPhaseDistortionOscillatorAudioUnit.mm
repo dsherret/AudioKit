@@ -3,7 +3,7 @@
 //  AudioKit
 //
 //  Created by Aurelius Prochazka, revision history on Github.
-//  Copyright (c) 2016 Aurelius Prochazka. All rights reserved.
+//  Copyright © 2017 Aurelius Prochazka. All rights reserved.
 //
 
 #import "AKPhaseDistortionOscillatorAudioUnit.h"
@@ -62,7 +62,7 @@ standardKernelPassthroughs()
                                                           unit:kAudioUnitParameterUnit_Hertz];
     // Create a parameter object for the phaseDistortion.
     AUParameter *phaseDistortionAUParameter = [AUParameter parameter:@"phaseDistortion"
-                                                                name:@"Pulse Width"
+                                                                name:@"Phase Distortion"
                                                              address:phaseDistortionAddress
                                                                  min:0.0
                                                                  max:1.0
@@ -78,8 +78,8 @@ standardKernelPassthroughs()
     AUParameter *detuningMultiplierAUParameter = [AUParameter parameter:@"detuningMultiplier"
                                                                    name:@"Frequency detuning multiplier"
                                                                 address:detuningMultiplierAddress
-                                                                    min:0.5
-                                                                    max:2.0
+                                                                    min:0.0
+                                                                    max:FLT_MAX
                                                                    unit:kAudioUnitParameterUnit_Generic];
 
     // Initialize the parameter values.
@@ -91,7 +91,7 @@ standardKernelPassthroughs()
 
     _kernel.setParameter(frequencyAddress,          frequencyAUParameter.value);
     _kernel.setParameter(amplitudeAddress,          amplitudeAUParameter.value);
-    _kernel.setParameter(phaseDistortionAddress,         phaseDistortionAUParameter.value);
+    _kernel.setParameter(phaseDistortionAddress,    phaseDistortionAUParameter.value);
     _kernel.setParameter(detuningOffsetAddress,     detuningOffsetAUParameter.value);
     _kernel.setParameter(detuningMultiplierAddress, detuningMultiplierAUParameter.value);
 
