@@ -36,7 +36,5 @@ import Foundation
     /// Callback function for FFT computation
     @objc open func fft(_ fft: EZAudioFFT!, updatedWithFFTData fftData: UnsafeMutablePointer<Float>, bufferSize: vDSP_Length) {
         self.fftDataReceivedCallback(fftData, Int(bufferSize))
-        //DispatchQueue.main.async { () -> Void in
-        //}
     }
 }
