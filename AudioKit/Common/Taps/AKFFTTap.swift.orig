@@ -11,8 +11,15 @@
 
     internal let bufferSize: UInt32 = 1_024
     internal var fft: EZAudioFFT?
+<<<<<<< HEAD
     private var fftDataReceivedCallback: (_ fftData: UnsafeMutablePointer<Float>, _ bufferSize: Int) -> Void
+    
+=======
 
+    /// Array of FFT data
+    open var fftData = [Double](zeros: 512)
+
+>>>>>>> upstream/master
     /// Initialze the FFT calculation on a given node
     ///
     /// - parameter input: Node on whose output the FFT will be computed
@@ -39,9 +46,18 @@
     }
 
     /// Callback function for FFT computation
+<<<<<<< HEAD
+    @objc open func fft(_ fft: EZAudioFFT!, updatedWithFFTData fftData: UnsafeMutablePointer<Float>, bufferSize: vDSP_Length) {
+        self.fftDataReceivedCallback(fftData, Int(bufferSize))
+=======
     @objc open func fft(_ fft: EZAudioFFT!,
                         updatedWithFFTData fftData: UnsafeMutablePointer<Float>,
                         bufferSize: vDSP_Length) {
-        self.fftDataReceivedCallback(fftData, Int(bufferSize))
+        DispatchQueue.main.async { () -> Void in
+            for i in 0..<512 {
+                self.fftData[i] = Double(fftData[i])
+            }
+        }
+>>>>>>> upstream/master
     }
 }
