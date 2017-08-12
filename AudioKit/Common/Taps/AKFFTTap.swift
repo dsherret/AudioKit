@@ -11,13 +11,13 @@
 
     internal let bufferSize: UInt32 = 1_024
     internal var fft: EZAudioFFT?
-    private var fftDataReceivedCallback: (_ fftData: [Double], _ bufferSize: Int) -> Void
+    private var fftDataReceivedCallback: (_ fftData: [Double]) -> Void
 
     /// Initialze the FFT calculation on a given node
     ///
     /// - parameter input: Node on whose output the FFT will be computed
     ///
-    public init(_ input: AKNode, fftDataReceivedCallback: @escaping (_ fftData: [Double], _ bufferSize: Int) -> Void) {
+    public init(_ input: AKNode, fftDataReceivedCallback: @escaping (_ fftData: [Double]) -> Void) {
         self.fftDataReceivedCallback = fftDataReceivedCallback
         super.init()
         fft = EZAudioFFT(maximumBufferSize: vDSP_Length(bufferSize),
@@ -48,6 +48,6 @@
             data[i] = Double(fftData[i])
         }
         
-        self.fftDataReceivedCallback(data, Int(bufferSize))
+        self.fftDataReceivedCallback(data)
     }
 }
